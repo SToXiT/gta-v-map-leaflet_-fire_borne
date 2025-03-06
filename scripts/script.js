@@ -22,24 +22,24 @@ CUSTOM_CRS = L.extend({}, L.CRS.Simple, {
     infinite: true
 });
 
-var SateliteStyle = L.tileLayer('mapStyles/styleSatelite/{z}/{x}/{y}.jpg', {minZoom: 0,maxZoom: 8,noWrap: true,continuousWorld: false,attribution: 'Online map GTA V',id: 'SateliteStyle map',}),
-	AtlasStyle	= L.tileLayer('mapStyles/styleAtlas/{z}/{x}/{y}.jpg', {minZoom: 0,maxZoom: 5,noWrap: true,continuousWorld: false,attribution: 'Online map GTA V',id: 'styleAtlas map',}),
-	GridStyle	= L.tileLayer('mapStyles/styleGrid/{z}/{x}/{y}.png', {minZoom: 0,maxZoom: 5,noWrap: true,continuousWorld: false,attribution: 'Online map GTA V',id: 'styleGrid map',});
+var SateliteStyle = L.tileLayer('mapStyles/styleSatelite/{z}/{x}/{y}.jpg', {minZoom: 0,maxZoom: 8,noWrap: true,continuousWorld: false,id: 'SateliteStyle map',}),
+	AtlasStyle	= L.tileLayer('mapStyles/styleAtlas/{z}/{x}/{y}.jpg', {minZoom: 0,maxZoom: 5,noWrap: true,continuousWorld: false,id: 'styleAtlas map',}),
+	GridStyle	= L.tileLayer('mapStyles/styleGrid/{z}/{x}/{y}.png', {minZoom: 0,maxZoom: 5,noWrap: true,continuousWorld: false,id: 'styleGrid map',});
 
 var ExampleGroup = L.layerGroup();
 
 var Icons = {
-	"Example" :ExampleGroup,
+	"Borne Incendie" :ExampleGroup,
 };
 
 var mymap = L.map('map', {
     crs: CUSTOM_CRS,
     minZoom: 1,
     maxZoom: 5,
-    Zoom: 5,
+    zoom: 5,
     maxNativeZoom: 5,
     preferCanvas: true,
-    layers: [SateliteStyle],
+    layers: [SateliteStyle, ExampleGroup],
     center: [0, 0],
     zoom: 3,
 });
@@ -50,12 +50,71 @@ var layersControl = L.control.layers({ "Satelite": SateliteStyle,"Atlas": AtlasS
 function customIcon(icon){
 	return L.icon({
 		iconUrl: `blips/${icon}.png`,
-		iconSize:     [20, 20],
-		iconAnchor:   [20, 20], 
-		popupAnchor:  [-10, -27]
+		iconSize:     [15, 15],
+		iconAnchor:   [10, 10], 
+		popupAnchor:  [0, -7]
 	});
 }
 
-var X  = 0;
-var Y = 0;
-L.marker([Y,X], {icon: customIcon(1)}).addTo(Icons["Example"]).bindPopup("I am here.");
+function updateMarkerPosition(latlng) {
+    marker.setLatLng(latlng);
+}
+
+mymap.on('mousemove', function(e) {
+    var lat = e.latlng.lat;
+    var lng = e.latlng.lng;
+
+    // Display coordinates in a div (you might need to create this div in your HTML)
+    document.getElementById('mouse-coordinates').innerText = 'Lat: ' + lat.toFixed(2) + ', Lng: ' + lng.toFixed(2);
+});
+
+// Fonction pour changer la couleur du fond en fonction du calque actif
+function updateBackgroundColor(layerId) {
+    const mapContainer = document.getElementById('map'); // Assurez-vous que l'élément a l'ID "map"
+    
+    // Définir une couleur pour chaque calque
+    const layerColors = {
+        "SateliteStyle map": "#153E6A", // Couleur noire pour le style satellite
+        "styleAtlas map": "#0FA8D2",   // Couleur gris clair pour le style atlas
+        "styleGrid map": "#8F8F8F"     // Couleur blanche pour le style grille
+    };
+
+    // Appliquer la couleur correspondante ou un défaut si non défini
+    mapContainer.style.backgroundColor = layerColors[layerId] || "#000000";
+}
+
+// Mettre à jour la couleur du fond lorsque le calque change
+mymap.on('baselayerchange', function (event) {
+    updateBackgroundColor(event.layer.options.id);
+});
+
+// Initialiser avec la couleur du calque par défaut (SateliteStyle)
+updateBackgroundColor(SateliteStyle.options.id);
+
+let tempMarker = null; // Variable to store the temporary marker
+
+// Function to add a temporary marker on click
+mymap.on('click', function(e) {
+    var lat = e.latlng.lat;
+    var lng = e.latlng.lng;
+
+    // Remove the previous temporary marker if it exists
+    if (tempMarker !== null) {
+        mymap.removeLayer(tempMarker);
+    }
+
+    // Create a new temporary marker
+    tempMarker = L.marker([lat, lng])
+        .addTo(mymap)
+        .bindPopup("Coordinates: " + lat.toFixed(2) + ", " + lng.toFixed(2))
+        .on('popupclose', function(event) { // Add popupclose event listener
+            mymap.removeLayer(tempMarker); // Remove the marker when the popup is closed
+            tempMarker = null; // Reset tempMarker
+        });
+
+    // Open the popup immediately
+    tempMarker.openPopup();
+});
+
+//L.marker([Y,X], {icon: customIcon(1)}).addTo(Icons["Example"]).bindPopup("I am here.");
+L.marker([3761,1928], {icon: customIcon(2)}).addTo(Icons["Borne Incendie"]).bindPopup("I am here.");
